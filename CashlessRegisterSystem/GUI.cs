@@ -10,6 +10,8 @@ using System.Timers;
 using System.Windows.Forms;
 using System.Threading;
 using System.Runtime.InteropServices;
+using CashlessRegisterSystemCore.Helpers;
+using CashlessRegisterSystemCore.Model;
 
 namespace ViltjesSysteem
 {
@@ -29,12 +31,28 @@ namespace ViltjesSysteem
         public static EventHandler dataChange;
         public static MessageEventHandler messageNotice;
 
+        private TransactionList transactionList;
+        private MemberList memberList;
+        private TransferList transferList;
+
         public GUI()
         {
             InitializeComponent();
+
+            memberList = new MemberList(false, Environment.CurrentDirectory, watch:true);
+            transactionList = TransactionList.LoadFromFile();
+            transferList = TransferList.LoadAndWatchFromFile();
+            memberList.ClearAndAddTransfers(transferList.All);
+            memberList.ClearAndAddTransactions(transactionList.All);
+            memberList.dataChange += UpdateGUI;
+            memberList.messageNotice += MessageNotice;
+            transactionList.dataChange += UpdateGUI;
+            transactionList.messageNotice += MessageNotice;
+
+
             dataChange += UpdateGUI;
             messageNotice += MessageNotice;
-            int initOrder = Member.All.Count + Transaction.All.Count + Transfer.All.Count;
+           // int initOrder = Member.All.Count + Transaction.All.Count + Transfer.All.Count;
             checkTimer.Elapsed += TimedCheck;
             checkTimer.Interval = 30000;
             checkTimer.Enabled = true;
@@ -158,10 +176,10 @@ namespace ViltjesSysteem
         {
             HashSet<Member> last = new HashSet<Member>();
 
-            for (int i = Transaction.All.Count - 1; last.Count < 6 && i >= 0; i--)
+            for (int i = transactionList.All.Count - 1; last.Count < 6 && i >= 0; i--)
             {
                 Member member;
-                if (Member.FromName.TryGetValue(Transaction.All[i].MemberName, out member))
+                if (memberList.FromName.TryGetValue(transactionList.All[i].MemberName, out member))
                 {
                     last.Add(member);
                 }
@@ -196,7 +214,7 @@ namespace ViltjesSysteem
             names_select.Visible = false;
             names_back.Visible = false;
             clear_name.Visible = true;
-            paying_member.Text = member.MemberName;
+            paying_member.Text = member.Name;
             nameClickSource = null;
         }
         
@@ -208,12 +226,12 @@ namespace ViltjesSysteem
             char end = char.ToUpper(nameClickSource.Text[nameClickSource.Text.Count()-1]);
             int i = 0;
             //Char.ToLower was needed because of ugly input
-            while (i < Member.All.Count && Char.ToLower(Member.All.Keys[i][0]) < Char.ToLower(start)) i++;
-            while (i < Member.All.Count && Char.ToLower(Member.All.Keys[i][0]) >= Char.ToLower(start) && Char.ToLower(Member.All.Keys[i][0]) <= Char.ToLower(end))
+            while (i < memberList.All.Count && Char.ToLower(memberList.All.Keys[i][0]) < Char.ToLower(start)) i++;
+            while (i < memberList.All.Count && Char.ToLower(memberList.All.Keys[i][0]) >= Char.ToLower(start) && Char.ToLower(memberList.All.Keys[i][0]) <= Char.ToLower(end))
             {
                 try
                 {
-                    names_select.Controls.Add(GenerateMemberLabel(Member.All.Values[i], true));
+                    names_select.Controls.Add(GenerateMemberLabel(memberList.All.Values[i], true));
                 }
                 catch { }
                 i++;
@@ -227,11 +245,11 @@ namespace ViltjesSysteem
         {
             history_transactions.Controls.Clear();
             DateTime lastDate = new DateTime();
-            for (int i = Transaction.All.Count - 1; i > 0 && i > Transaction.All.Count - 100; i--)
+            for (int i = transactionList.All.Count - 1; i > 0 && i > transactionList.All.Count - 100; i--)
             {
                 try
                 {
-                    Transaction transaction = Transaction.All[i];
+                    Transaction transaction = transactionList.All[i];
 
                     if (lastDate.Date != transaction.TransactionDate.Date)
                     {
@@ -249,7 +267,7 @@ namespace ViltjesSysteem
                         history_transactions.Controls.Add(historyDateLabel);
                     }
 
-                    TransactionLabel historyNameLabel = new TransactionLabel(transaction);
+                    TransactionLabel historyNameLabel = new TransactionLabel(transaction, transactionList);
                     historyNameLabel.MouseDown += HistoryTransactions_MouseDown;
                     historyNameLabel.MouseUp += HistoryTransactions_MouseUp;
                     historyNameLabel.MouseMove += HistoryTransactions_MouseMove;
@@ -288,7 +306,7 @@ namespace ViltjesSysteem
                     int amount = number;
                     if (paying_member.Text != "" && amount != 0)
                     {
-                        Transaction.New(amount, paying_member.Text);
+                        transactionList.New(amount, paying_member.Text, memberList);
                         KeypadClear_Click(sender, e);
                         NameClear_Click(sender, e);
                         LastNames();
@@ -522,7 +540,7 @@ namespace ViltjesSysteem
 
         private void correct_ok_Click(object sender, EventArgs e)
         {
-            Transaction.Cancel(cancelTransaction);
+            transactionList.Cancel(cancelTransaction, memberList);
             KeypadClear_Click(sender, e);
             NameClear_Click(sender, e);
             LastNames();
@@ -563,8 +581,8 @@ namespace ViltjesSysteem
 
         protected override void OnPaint(PaintEventArgs e)
         {
-            e.Graphics.DrawString(Member.MemberName, Font, solidBrush, ClientRectangle, stringFormat);
-            if (Member.MemberName=="Zklant")
+            e.Graphics.DrawString(Member.Name, Font, solidBrush, ClientRectangle, stringFormat);
+            if (Member.Name=="Zklant")
                 e.Graphics.DrawString(string.Format("€ {0:0.00}", Member.CurrentBalanceAmountInCents / 100.0), balanceFont, BackColor == Color.Red ? solidBrush : Member.CurrentBalanceAmountInCents < 0 && Member.Payment == Member.PaymentMethod.PREPAID ? new SolidBrush(Color.Red) : solidBrush, ClientRectangle, balanceStringFormat);
         }
     }
@@ -581,10 +599,12 @@ namespace ViltjesSysteem
         public bool isCancelable = false;
 
         public Transaction Transaction {get; private set;}
+        public TransactionList TransactionList { get; private set; }
 
-        public TransactionLabel(Transaction transaction)
+        public TransactionLabel(Transaction transaction, TransactionList transactionList)
         {
             Transaction = transaction;
+            TransactionList = transactionList;
             beginNameStringFormat = new StringFormat();
             beginNameStringFormat.LineAlignment = StringAlignment.Center;
             beginNameStringFormat.Alignment = StringAlignment.Near;
@@ -624,7 +644,7 @@ namespace ViltjesSysteem
             Transaction correctedTransaction;
             return Transaction.AmountInCents > 0
                 && DateTime.Now - Transaction.TransactionDate < cancelTime
-                && !(Transaction.Corrected.TryGetValue(Transaction.TransactionDate, out correctedTransaction)
+                && !(TransactionList.Corrected.TryGetValue(Transaction.TransactionDate, out correctedTransaction)
                     && correctedTransaction.MemberName == Transaction.MemberName
                     && -correctedTransaction.AmountInCents == Transaction.AmountInCents);
         }
@@ -652,16 +672,16 @@ namespace ViltjesSysteem
         }
     }
 
-    public enum MessageType
-    {
-        Service, Info, Warning, FatalError
-    }
+    //public enum MessageType
+    //{
+    //    Service, Info, Warning, FatalError
+    //}
 
-    public class MessageEventArgs : EventArgs
-    {
-        public string Message { get; set; }
-        public MessageType Type { get; set; }
-    }
+    //public class MessageEventArgs : EventArgs
+    //{
+    //    public string Message { get; set; }
+    //    public MessageType Type { get; set; }
+    //}
 
     //See http://stackoverflow.com/a/745227
     //For mono: no idea yet!
