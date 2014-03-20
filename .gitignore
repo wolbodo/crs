@@ -1,2 +1,6 @@
-*.v11.suo
-*.v12.suo
+*.suo
+*.user
+bin/
+obj/
+Backup/Data/
+attic/
