@@ -27,6 +27,7 @@ namespace CashlessRegisterSystemCore.Model
         }
 
         public List<MemberBalance> MemberBalances { get; set; }
+        public List<Transaction> Transactions { get; set; } 
         public int Month { get; set; }
         public int Year { get; set; }
 
