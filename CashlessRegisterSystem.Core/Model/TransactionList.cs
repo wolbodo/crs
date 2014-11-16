@@ -121,33 +121,24 @@ namespace CashlessRegisterSystemCore.Model
             try
             {
                 File.AppendAllText(transactionFile, transaction.ToLogLine(), Encoding.UTF8);
-            }
-            catch (Exception e)
-            {
-                errorMessage = e.Message;
-            }
-            if (string.IsNullOrEmpty(errorMessage))
-            {
-                // leaky abstraction...yup
                 memberList.TryAddTransaction(transaction);
                 All.Add(transaction);
                 if (transaction.AmountInCents < 0)
                 {
                     TryParseCorrected(transaction);
                 }
-
             }
-            else
+            catch (Exception e)
             {
                 messageNotice(new MessageEventArgs
                 {
-                    Type = MessageType.Warning,
+                    Type = MessageType.FatalError,
                     Message =
                         string.Format(
-                            "Kon de transactie ({0}) niet op het netwerk opslaan maar de transactie is wel lokaal opgeslagen. " +
+                            "Kon de transactie ({0}) niet lokaal opslaan! " +
                             Environment.NewLine +
-                            "Breng z.s.m. Benjamin of Junior op de hoogte om naar het netwerk te kijken (netwerkprobleem of schrijfprobleem op Tommie)." +
-                            Environment.NewLine + "Bericht: {1}", transaction, errorMessage)
+                            "Breng z.s.m. Helmer, Benjamin of Junior op de hoogte om naar de laptop te kijken." +
+                            Environment.NewLine + "Bericht: {1}", transaction, e.Message)
                 });
             }
 
