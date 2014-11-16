@@ -140,6 +140,7 @@ namespace CashlessRegisterSystemCore.Model
                             "Breng z.s.m. Helmer, Benjamin of Junior op de hoogte om naar de laptop te kijken." +
                             Environment.NewLine + "Bericht: {1}", transaction, e.Message)
                 });
+                transaction = null;
             }
 
             return transaction;
