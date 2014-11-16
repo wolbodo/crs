@@ -62,8 +62,8 @@ namespace CashlessRegisterSystemCore.Tasks
             foreach (var fileName in files)
             {
                 var info = new FileInfo(fileName);
-                int monthFile = GetMonth(info.Name);
-                int yearFile = GetYear(info.Name);
+                int monthFile = TransactionFileHelper.GetMonth(info.Name);
+                int yearFile = TransactionFileHelper.GetYear(info.Name);
                 if (monthFile != month || yearFile != year) continue;
                 string[] lines = File.ReadAllLines(Path.Combine(path, fileName));
                 transactionList.Init(lines.ToList());
@@ -78,15 +78,14 @@ namespace CashlessRegisterSystemCore.Tasks
             foreach (var fileName in files)
             {
                 var info = new FileInfo(fileName);
-                int monthFile = GetMonth(info.Name);
-                int yearFile = GetYear(info.Name);
+                int monthFile = TransactionFileHelper.GetMonth(info.Name);
+                int yearFile = TransactionFileHelper.GetYear(info.Name);
                 if (monthFile != month || yearFile != year) continue;
                 string[] lines = File.ReadAllLines(Path.Combine(path, fileName));
                 transferList.Init(lines.ToList());
             }
             return transferList;
         }
-
 
         public static DateTime GetValidBalanceDate(List<DateTime> balances)
         {
@@ -128,8 +127,8 @@ namespace CashlessRegisterSystemCore.Tasks
             var list = new List<DateTime>();
             foreach (var fileInfo in balanceFiles)
             {
-                int month = GetMonth(fileInfo);
-                int year = GetYear(fileInfo);
+                int month = TransactionFileHelper.GetMonth(fileInfo);
+                int year = TransactionFileHelper.GetYear(fileInfo);
                 DateTime date = new DateTime(year, month, 1);
                 list.Add(date);
             }

@@ -48,6 +48,7 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="Helpers\TransactionFileHelper.cs" />
     <Compile Include="Settings.cs" />
     <Compile Include="Helpers\DateTimeExtensions.cs" />
     <Compile Include="Helpers\ExcelHelper.cs" />

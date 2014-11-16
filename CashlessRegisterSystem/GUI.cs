@@ -87,6 +87,7 @@ namespace ViltjesSysteem
                 {
                     lastSuccesfullSync = DateTime.Now;
                 }
+                GenerateMonthTransactionsExcel.Execute();
             }
 
         }
