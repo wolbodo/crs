@@ -16,11 +16,25 @@ namespace CashlessRegisterSystemCore.Tasks
     {
         static DateTimeFormatInfo dateTimeInfo = DateTimeFormatInfo.GetInstance(CultureInfo.GetCultureInfo("nl-NL"));
 
-        public static void Execute(string transactionFile)
+        public static void Execute()
+        {
+             var files = new List<string>();
+            files.AddRange(Directory.GetFiles(Settings.LocalTransactionsPath, "transactions-*.txt"));
+            foreach (var sourceFile in files)
+            {
+                ExecuteSingle(sourceFile);
+            }
+        }
+
+        private static void ExecuteSingle(string transactionFile)
         {
             var info = new FileInfo(transactionFile);
             int monthFile = TransactionFileHelper.GetMonth(info.Name);
             int yearFile = TransactionFileHelper.GetYear(info.Name);
+            var name = "Streeplijst Wolbodo " + dateTimeInfo.MonthNames[monthFile - 1] + " " + yearFile;
+            var overviewFile = Path.Combine(Settings.LocalTransactionsPath, name + ".xlsx");
+
+            if (File.Exists(overviewFile)) return;
             string[] lines = File.ReadAllLines(transactionFile);
             var transactionList = new TransactionList();
             transactionList.Init(lines.ToList());
@@ -31,11 +45,9 @@ namespace CashlessRegisterSystemCore.Tasks
                 Transaction transaction1 = transaction;
                 if (monthMembers.SingleOrDefault(x => x.Name == transaction1.MemberName) == null)
                 {
-                    monthMembers.Add(new Member(){AccountName = transaction1.MemberName });
+                    monthMembers.Add(new Member { Name = transaction1.MemberName });
                 }
             }
-            var name = "Streeplijst Wolbodo " + dateTimeInfo.MonthNames[monthFile - 1] + " " + yearFile;
-            var overviewFile = Path.Combine(Settings.LocalTransactionsPath, name + ".xlsx");
             var balance = InitMonthBalance(yearFile, monthFile, monthMembers);
             Generate(overviewFile, balance);
         }

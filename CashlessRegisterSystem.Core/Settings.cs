@@ -15,7 +15,7 @@ namespace CashlessRegisterSystemCore
 
         public static string LocalTransactionsPath
         {
-            get { return GetSetting("SourceTransactionsPath", string.Empty); }
+            get { return GetSetting("SourceTransactionsPath", Environment.CurrentDirectory); }
         }
 
         // our backup location
