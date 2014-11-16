@@ -62,6 +62,7 @@
             this.correct_buttons = new System.Windows.Forms.FlowLayoutPanel();
             this.correct_cancel = new System.Windows.Forms.Label();
             this.correct_ok = new System.Windows.Forms.Label();
+            this.lastSyncInfo = new System.Windows.Forms.Label();
             this.message_overlay.SuspendLayout();
             this.correct_overlay.SuspendLayout();
             this.correct_buttons.SuspendLayout();
@@ -442,9 +443,9 @@
             this.names_back.BackColor = System.Drawing.Color.Red;
             this.names_back.Font = new System.Drawing.Font("Segoe UI", 28F);
             this.names_back.ForeColor = System.Drawing.Color.White;
-            this.names_back.Location = new System.Drawing.Point(755, 635);
+            this.names_back.Location = new System.Drawing.Point(755, 645);
             this.names_back.Name = "names_back";
-            this.names_back.Size = new System.Drawing.Size(240, 80);
+            this.names_back.Size = new System.Drawing.Size(240, 70);
             this.names_back.TabIndex = 11;
             this.names_back.Tag = "Red";
             this.names_back.Text = "Stop";
@@ -583,12 +584,24 @@
             this.correct_ok.MouseDown += new System.Windows.Forms.MouseEventHandler(this.Feedback_MouseDown);
             this.correct_ok.MouseUp += new System.Windows.Forms.MouseEventHandler(this.Feedback_MouseUp);
             // 
+            // lastSyncInfo
+            // 
+            this.lastSyncInfo.BackColor = System.Drawing.Color.Transparent;
+            this.lastSyncInfo.Font = new System.Drawing.Font("Segoe UI", 12F);
+            this.lastSyncInfo.ForeColor = System.Drawing.Color.White;
+            this.lastSyncInfo.Location = new System.Drawing.Point(662, 738);
+            this.lastSyncInfo.Margin = new System.Windows.Forms.Padding(0);
+            this.lastSyncInfo.Name = "lastSyncInfo";
+            this.lastSyncInfo.Size = new System.Drawing.Size(362, 30);
+            this.lastSyncInfo.TabIndex = 30;
+            this.lastSyncInfo.Tag = "Blue";
+            this.lastSyncInfo.Text = "Waiting for first synchronization.";
+            // 
             // GUI
             // 
-        //    this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 13F);
-        //    this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
             this.BackColor = System.Drawing.Color.Black;
             this.ClientSize = new System.Drawing.Size(1024, 768);
+            this.Controls.Add(this.lastSyncInfo);
             this.Controls.Add(this.names_back);
             this.Controls.Add(this.names_last);
             this.Controls.Add(this.names3);
@@ -671,5 +684,6 @@
         private System.Windows.Forms.FlowLayoutPanel correct_buttons;
         private System.Windows.Forms.Label correct_cancel;
         private System.Windows.Forms.Label correct_ok;
+        private System.Windows.Forms.Label lastSyncInfo;
     }
 }

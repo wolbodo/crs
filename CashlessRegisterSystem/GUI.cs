@@ -11,6 +11,7 @@ using CashlessRegisterSystemCore.Helpers;
 using CashlessRegisterSystemCore.Model;
 using CashlessRegisterSystemCore.Tasks;
 using Timer = System.Threading.Timer;
+using System.Media;
 
 namespace ViltjesSysteem
 {
@@ -34,6 +35,8 @@ namespace ViltjesSysteem
         private TransactionList transactionList;
         private MemberList memberList;
         private TransferList transferList;
+        private bool _writingTransaction = false;
+        private DateTime lastSuccesfullSync = DateTime.MinValue;
 
         public GUI()
         {
@@ -74,9 +77,6 @@ namespace ViltjesSysteem
             correct_overlay.BringToFront();
         }
 
-        private bool _writingTransaction = false;
-        private DateTime lastSuccesfullSync = DateTime.MinValue;
-
         private void OnSynchronizeTransactions(object state)
         {
             // make sure all remote files are copies of the 
@@ -87,6 +87,12 @@ namespace ViltjesSysteem
                 {
                     lastSuccesfullSync = DateTime.Now;
                 }
+                Invoke((MethodInvoker)delegate
+                {
+                    int minutesAgo = (DateTime.Now - lastSuccesfullSync).Minutes;
+                    lastSyncInfo.Text = string.Format("Last synchronization {0} minutes ago ({1:yyyy-MM-dd})", minutesAgo, DateTime.Now);
+                    lastSyncInfo.BackColor = minutesAgo < 10 ? Color.Transparent : Color.Red;
+                });
                 GenerateMonthTransactionsExcel.Execute();
             }
 
@@ -178,6 +184,7 @@ namespace ViltjesSysteem
         {
             if (User32Interop.GetLastInput() > idleThreshold)
             {
+                //ignored - write to file
                 Invoke((MethodInvoker)delegate
                 {
                     KeypadClear_Click(sender, e);
@@ -219,7 +226,7 @@ namespace ViltjesSysteem
         private Label GenerateMemberLabel(Member member, bool listView)
         {
             var memberLabel = new MemberLabel(member);
-            memberLabel.Size = new Size(listView ? 240 : 260, listView ? 60 : 80);
+            memberLabel.Size = new Size(listView ? 240 : 260, listView ? 70 : 80);
             memberLabel.Margin = listView ? new Padding(5) : new Padding(0, 0, 0, 10);
             memberLabel.Click += Member_Click;
             memberLabel.MouseDown += Feedback_MouseDown;
@@ -326,8 +333,15 @@ namespace ViltjesSysteem
                     if (paying_member.Text != "" && amount != 0)
                     {
                         _writingTransaction = true;
-                        transactionList.New(amount, paying_member.Text, memberList);
+                        Transaction ok = transactionList.New(amount, paying_member.Text, memberList);
                         _writingTransaction = false;
+                        if (ok != null) {
+                            try
+                            {
+                                (new SoundPlayer(@"cashregister2.wav")).Play();
+                            }
+                            catch { }
+                        }
                         KeypadClear_Click(sender, e);
                         NameClear_Click(sender, e);
                         LastNames();
