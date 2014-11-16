@@ -218,7 +218,7 @@ namespace ViltjesSysteem
         private Label GenerateMemberLabel(Member member, bool listView)
         {
             var memberLabel = new MemberLabel(member);
-            memberLabel.Size = new Size(listView ? 240 : 260, 80);
+            memberLabel.Size = new Size(listView ? 240 : 260, listView ? 60 : 80);
             memberLabel.Margin = listView ? new Padding(5) : new Padding(0, 0, 0, 10);
             memberLabel.Click += Member_Click;
             memberLabel.MouseDown += Feedback_MouseDown;
