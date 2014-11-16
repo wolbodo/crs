@@ -9,7 +9,7 @@ namespace CashlessRegisterSystemCore.Model
 {
     public class MemberList : NotifyList
     {
-        public const string MEMBER_LIST_PATH = "members.txt";
+        //public const string MEMBER_LIST_PATH = "members.txt";
 
         public Dictionary<String, Member> FromKey { get; private set; }
         public SortedList<String, Member> All { get; private set; }
@@ -25,7 +25,7 @@ namespace CashlessRegisterSystemCore.Model
             Init(ReadMemberLines(path));
             if (watch)
             {
-                var memberWatcher = new FileSystemWatcher(path, MEMBER_LIST_PATH);
+                var memberWatcher = new FileSystemWatcher(path, Settings.MembersFile);
                 memberWatcher.Changed += OnChanged;
                 memberWatcher.Created += OnChanged;
                 memberWatcher.EnableRaisingEvents = true;
@@ -43,7 +43,7 @@ namespace CashlessRegisterSystemCore.Model
         public static List<string> ReadMemberLines(string path)
         {
             var result = new List<string>();
-            result.AddRange(File.ReadAllLines(Path.Combine(path, MEMBER_LIST_PATH), Encoding.UTF8));
+            result.AddRange(File.ReadAllLines(Path.Combine(path, Settings.MembersFile), Encoding.UTF8));
             result.RemoveRange(0, 4);
             return result;
         }

@@ -78,8 +78,6 @@ namespace CashlessRegisterSystemCore.Model
             catch { }
         }
 
-
-
         public Transaction New(int amount, string memberName, MemberList members)
         {
             return New(amount, memberName, "", members);
@@ -119,41 +117,38 @@ namespace CashlessRegisterSystemCore.Model
 
             //try network save, but degrade without errors (but there should be a warning on the display!)
             //FIXME: part about the warning
-            bool localWrite = false, networkWrite = false;
+            string errorMessage = string.Empty;
             try
             {
                 File.AppendAllText(transactionFile, transaction.ToLogLine(), Encoding.UTF8);
-                localWrite = true;
             }
-            catch { }
-            try
+            catch (Exception e)
             {
-                File.AppendAllText(Path.Combine(FileHelper.NETWORK_PATH_PREFIX, transactionFile), transaction.ToLogLine(), Encoding.UTF8);
-                networkWrite = true;
+                errorMessage = e.Message;
             }
-            catch { }
-
-            if (localWrite || networkWrite)
+            if (string.IsNullOrEmpty(errorMessage))
             {
-                // leaky abstraction...
+                // leaky abstraction...yup
                 memberList.TryAddTransaction(transaction);
                 All.Add(transaction);
                 if (transaction.AmountInCents < 0)
                 {
                     TryParseCorrected(transaction);
                 }
-                if (!localWrite)
-                {
-                    messageNotice(new MessageEventArgs { Type = MessageType.Warning, Message = string.Format("Kon de transactie ({0}) niet lokaal opslaan maar de transactie is wel op het netwerk opgeslagen.\r\n\r\nBreng z.s.m. Trui en Benjamin op de hoogte om naar de viltjeslaptop te kijken (waarschijnlijk een harddisk probleem)", transaction) });
-                }
-                if (!networkWrite)
-                {
-                    messageNotice(new MessageEventArgs { Type = MessageType.Warning, Message = string.Format("Kon de transactie ({0}) niet op het netwerk opslaan maar de transactie is wel lokaal opgeslagen.\r\n\r\nBreng z.s.m. Trui en Benjamin op de hoogte om naar het netwerk te kijken (netwerkprobleem of schrijfprobleem op Tommie).", transaction) });
-                }
+
             }
             else
             {
-                messageNotice(new MessageEventArgs { Type = MessageType.FatalError, Message = string.Format("Kon de transactie ({0}) niet lokaal noch op het netwerk opslaan, ofwel je transactie is NIET genoteerd.\r\n\r\nGebruik de baragenda om alsnog je transactie op te schrijven!\r\n\r\nBreng tevens z.s.m. Trui en Benjamin op de hoogte dat het volledige systeem plat ligt!", transaction) });
+                messageNotice(new MessageEventArgs
+                {
+                    Type = MessageType.Warning,
+                    Message =
+                        string.Format(
+                            "Kon de transactie ({0}) niet op het netwerk opslaan maar de transactie is wel lokaal opgeslagen. " +
+                            Environment.NewLine +
+                            "Breng z.s.m. Benjamin of Junior op de hoogte om naar het netwerk te kijken (netwerkprobleem of schrijfprobleem op Tommie)." +
+                            Environment.NewLine + "Bericht: {1}", transaction, errorMessage)
+                });
             }
 
             return transaction;

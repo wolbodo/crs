@@ -87,19 +87,6 @@ namespace CashlessRegisterSystemCore.Tasks
             return transferList;
         }
 
-        private static int GetMonth(string fileName)
-        {
-            fileName = fileName.Replace(Path.GetExtension(fileName), string.Empty);
-            var splits = fileName.Split('-');
-            return int.Parse(splits[2]);
-        }
-
-        private static int GetYear(string fileName)
-        {
-            fileName = fileName.Replace(Path.GetExtension(fileName), string.Empty);
-            var splits = fileName.Split('-');
-            return int.Parse(splits[1]);
-        }
 
         public static DateTime GetValidBalanceDate(List<DateTime> balances)
         {

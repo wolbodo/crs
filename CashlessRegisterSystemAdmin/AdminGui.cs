@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.IO;
 using System.Windows.Forms;
+using CashlessRegisterSystemCore;
 using CashlessRegisterSystemCore.Model;
 using CashlessRegisterSystemCore.Tasks;
 
@@ -25,7 +26,7 @@ namespace ViltjesSysteemAdmin
 
         private void UpdateDirs()
         {
-            if (File.Exists(Path.Combine(outputDir, MemberList.MEMBER_LIST_PATH)))
+            if (File.Exists(Path.Combine(outputDir, Settings.MembersFile)))
             {
                 members = new MemberList(true, outputDir);
             }
@@ -160,7 +161,7 @@ namespace ViltjesSysteemAdmin
                 // update members txt
                 GenerateMonthBalances.UpdateMembersBalance(balance);
                 string backupFile = Path.Combine(outputDir, "members " + balance.Year + "-" + balance.Month + ".txt");
-                string membersFile = Path.Combine(outputDir, MemberList.MEMBER_LIST_PATH);
+                string membersFile = Path.Combine(outputDir, Settings.MembersFile);
                 if (File.Exists(membersFile))
                 {
                     if (File.Exists(backupFile)) File.Delete(backupFile);

@@ -1,22 +1,22 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.ComponentModel;
-using System.Data;
-using System.Diagnostics;
 using System.Drawing;
 using System.Linq;
-using System.Text;
-using System.Timers;
 using System.Windows.Forms;
 using System.Threading;
 using System.Runtime.InteropServices;
+using CashlessRegisterSystemCore;
 using CashlessRegisterSystemCore.Helpers;
 using CashlessRegisterSystemCore.Model;
+using CashlessRegisterSystemCore.Tasks;
+using Timer = System.Threading.Timer;
 
 namespace ViltjesSysteem
 {
     public partial class GUI : Form
     {
+        private Timer synchronizeTransactionsTimer;
         private int number;
         private int decimals = -1;
         private int memory;
@@ -49,7 +49,6 @@ namespace ViltjesSysteem
             transactionList.dataChange += UpdateGUI;
             transactionList.messageNotice += MessageNotice;
 
-
             dataChange += UpdateGUI;
             messageNotice += MessageNotice;
            // int initOrder = Member.All.Count + Transaction.All.Count + Transfer.All.Count;
@@ -57,8 +56,42 @@ namespace ViltjesSysteem
             checkTimer.Interval = 30000;
             checkTimer.Enabled = true;
         }
-        
-        public Color GetColor(Label lbl)
+
+        private void MainScreen_Load(object sender, EventArgs e)
+        {
+            this.Location = Screen.AllScreens.Count() == 1 || !Screen.AllScreens[0].Primary ?
+                                new Point(Screen.AllScreens[0].Bounds.X, Screen.AllScreens[0].Bounds.Y) :
+                                new Point(Screen.AllScreens[1].Bounds.X, Screen.AllScreens[1].Bounds.Y);
+            //Cursor.Hide();
+            synchronizeTransactionsTimer = new Timer(OnSynchronizeTransactions, null, 1000, 60*1000);
+
+            Cursor.Position = new Point(this.Location.X + this.Width / 2, this.Location.Y + this.Height / 2);
+
+            LastNames();
+            FillHistory();
+            names_select.BringToFront();
+            message_overlay.BringToFront();
+            correct_overlay.BringToFront();
+        }
+
+        private bool _writingTransaction = false;
+        private DateTime lastSuccesfullSync = DateTime.MinValue;
+
+        private void OnSynchronizeTransactions(object state)
+        {
+            // make sure all remote files are copies of the 
+            if (!_writingTransaction)
+            {
+                var errorMessage = SynchronizeFiles.Execute(Settings.LocalTransactionsPath, Settings.RemoteTransactionsPath);
+                if (string.IsNullOrEmpty(errorMessage))
+                {
+                    lastSuccesfullSync = DateTime.Now;
+                }
+            }
+
+        }
+
+        private static Color GetColor(Label lbl)
         {
             switch ((String)lbl.Tag)
             {
@@ -157,21 +190,6 @@ namespace ViltjesSysteem
             }
         }
 
-        private void MainScreen_Load(object sender, EventArgs e)
-        {
-            this.Location = Screen.AllScreens.Count() == 1 || !Screen.AllScreens[0].Primary ?
-                                new Point(Screen.AllScreens[0].Bounds.X, Screen.AllScreens[0].Bounds.Y):
-                                new Point(Screen.AllScreens[1].Bounds.X, Screen.AllScreens[1].Bounds.Y);
-            //Cursor.Hide();
-            Cursor.Position = new Point( this.Location.X + this.Width / 2, this.Location.Y + this.Height/ 2);
-
-            LastNames();
-            FillHistory();
-            names_select.BringToFront();
-            message_overlay.BringToFront();
-            correct_overlay.BringToFront();
-        }
-
         private void LastNames()
         {
             HashSet<Member> last = new HashSet<Member>();
@@ -199,7 +217,7 @@ namespace ViltjesSysteem
 
         private Label GenerateMemberLabel(Member member, bool listView)
         {
-            MemberLabel memberLabel = new MemberLabel(member);
+            var memberLabel = new MemberLabel(member);
             memberLabel.Size = new Size(listView ? 240 : 260, 80);
             memberLabel.Margin = listView ? new Padding(5) : new Padding(0, 0, 0, 10);
             memberLabel.Click += Member_Click;
@@ -210,7 +228,7 @@ namespace ViltjesSysteem
 
         private void Member_Click(object sender, EventArgs e)
         {
-            Member member = ((MemberLabel)sender).Member;
+            var member = ((MemberLabel)sender).Member;
             names_select.Visible = false;
             names_back.Visible = false;
             clear_name.Visible = true;
@@ -299,14 +317,16 @@ namespace ViltjesSysteem
         private void Keypad_Click(object sender, EventArgs e)
         {
             bool error = false;
-            Label src = (Label)sender;
+            Label src = (Label) sender;
             switch (src.Text)
             {
                 case "ok":
                     int amount = number;
                     if (paying_member.Text != "" && amount != 0)
                     {
+                        _writingTransaction = true;
                         transactionList.New(amount, paying_member.Text, memberList);
+                        _writingTransaction = false;
                         KeypadClear_Click(sender, e);
                         NameClear_Click(sender, e);
                         LastNames();
@@ -358,12 +378,12 @@ namespace ViltjesSysteem
                     {
                         if (plus || times)
                         {
-                            memory += int.Parse(src.Text) * (int) Math.Pow(10, 2 - ++decimals);
+                            memory += int.Parse(src.Text)*(int) Math.Pow(10, 2 - ++decimals);
                             CheckMax();
                         }
                         else
                         {
-                            number += int.Parse(src.Text) * (int) Math.Pow(10, 2 - ++decimals);
+                            number += int.Parse(src.Text)*(int) Math.Pow(10, 2 - ++decimals);
                             CheckMax();
                         }
                     }
@@ -371,12 +391,12 @@ namespace ViltjesSysteem
                     {
                         if (plus || times)
                         {
-                            memory = memory * 10 + int.Parse(src.Text) * 100;
+                            memory = memory*10 + int.Parse(src.Text)*100;
                             CheckMax();
                         }
                         else
                         {
-                            number = number * 10 + int.Parse(src.Text) * 100;
+                            number = number*10 + int.Parse(src.Text)*100;
                             CheckMax();
                         }
                     }
