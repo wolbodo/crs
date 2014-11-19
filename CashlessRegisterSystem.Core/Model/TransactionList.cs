@@ -12,7 +12,9 @@ namespace CashlessRegisterSystemCore.Model
     [DebuggerDisplay("TransactionList : {Year}-{Month} {All.Count}")]
     public class TransactionList : NotifyList
     {
-        private const string TRANSACTION_LIST_PATH = "'transactions-'yyyy'-'MM'.txt'";
+        public const string TRANSACTION_LIST_PATH = "'transactions-'yyyy'-'MM'.txt'";
+        public const string SERVER_QUEUE_PATH = "remotequeue.txt";
+        public const string ATOMIC_NEW_SERVER_QUEUE_PATH = "atomicnew-remotequeue.txt";
         public int Month { get; set; }
         public int Year { get; set; }
         
@@ -167,6 +169,10 @@ namespace CashlessRegisterSystemCore.Model
             try
             {
                 File.AppendAllText(transactionFile, transaction.ToFileLine() + Environment.NewLine, Encoding.UTF8);
+                lock (SERVER_QUEUE_PATH)
+                {
+                    File.AppendAllText(SERVER_QUEUE_PATH, transaction.ToFileLine() + Environment.NewLine, Encoding.UTF8);
+                }
                 memberList.TryAddTransaction(transaction);
                 All.Add(transaction);
                 if (transaction.AmountInCents < 0)
