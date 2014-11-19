@@ -16,9 +16,9 @@ namespace CashlessRegisterSystemCore.Model
         public string KeyCode { get; private set; }
         public string Note { get; internal set; }
 
-        public string ToLogLine()
+        public string ToFileLine()
         {
-            return String.Format("{0:yyyy'-'MM'-'dd';'HH':'mm':'ss};{1};{2};{3};{4}\r\n", TransactionDate, MemberName, KeyCode, AmountInCents, Note);
+            return String.Format("{0:yyyy'-'MM'-'dd';'HH':'mm':'ss};{1};{2};{3};{4}", TransactionDate, MemberName, KeyCode, AmountInCents, Note);
         }
 
         override public string ToString()

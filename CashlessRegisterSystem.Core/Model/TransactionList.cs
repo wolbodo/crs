@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Globalization;
 using System.IO;
+using System.Linq;
 using System.Text;
 using CashlessRegisterSystemCore.Helpers;
 
@@ -27,10 +28,55 @@ namespace CashlessRegisterSystemCore.Model
         public Dictionary<DateTime, Transaction> Corrected { get; private set; }
         private long ticksPerSecond = TimeSpan.FromSeconds(1).Ticks;
 
+        public void AddRange(List<Transaction> add)
+        {
+            All.AddRange(add);
+            All = All.OrderBy(x => x.TransactionDate).ToList();
+        }
+
+        public void Save(FileInfo file)
+        {
+            try
+            {
+                var text = new StringBuilder();
+                foreach (var transaction in All)
+                {
+                    text.AppendLine(transaction.ToFileLine());
+                }
+                if (File.Exists(file.FullName)) File.Move(file.FullName, file.FullName + ".bak");
+                File.WriteAllText(file.FullName, text.ToString());
+            }
+            catch (Exception e)
+            {
+                messageNotice(new MessageEventArgs
+                {
+                    Type = MessageType.FatalError,
+                    Message =
+                        string.Format(
+                            "Kon de gesynchroniseerde transactie lijst ({0}) niet opslaan! " +
+                            Environment.NewLine +
+                            "Breng z.s.m. Helmer, Benjamin of Junior op de hoogte om naar de laptop te kijken." +
+                            Environment.NewLine + "Bericht: {1}", file.FullName, e.Message)
+                });
+            }
+        }
+
         // only used by Gui - not admin or test
         public static TransactionList LoadFromFile()
         {
             var list = new TransactionList();
+            list.Init(ReadTransactionsLastTwoMonths());
+            return list;
+        }
+
+        public static TransactionList LoadFromFile(FileInfo fileInfo)
+        {
+            var list = new TransactionList();
+            if (File.Exists(fileInfo.FullName))
+            {
+                var lines = File.ReadAllLines(fileInfo.FullName, Encoding.UTF8);
+                list.Init(lines.ToList());
+            }
             list.Init(ReadTransactionsLastTwoMonths());
             return list;
         }
@@ -120,7 +166,7 @@ namespace CashlessRegisterSystemCore.Model
             string errorMessage = string.Empty;
             try
             {
-                File.AppendAllText(transactionFile, transaction.ToLogLine(), Encoding.UTF8);
+                File.AppendAllText(transactionFile, transaction.ToFileLine() + Environment.NewLine, Encoding.UTF8);
                 memberList.TryAddTransaction(transaction);
                 All.Add(transaction);
                 if (transaction.AmountInCents < 0)

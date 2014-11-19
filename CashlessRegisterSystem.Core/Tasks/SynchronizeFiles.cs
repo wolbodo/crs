@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.IO;
 using CashlessRegisterSystemCore.Helpers;
+using CashlessRegisterSystemCore.Model;
 using NUnit.Framework;
 
 namespace CashlessRegisterSystemCore.Tasks
@@ -30,20 +31,59 @@ namespace CashlessRegisterSystemCore.Tasks
             files.AddRange(Directory.GetFiles(sourcePath, "transactions-*.txt"));
             // add the members file for synchronisation
             files.Add(Path.Combine(sourcePath, Settings.MembersFile));
-            foreach (var sourceFile in files)
+            foreach (var localFile in files)
             {
-                var remoteFile = Path.Combine(destinationPath, Path.GetFileName(sourceFile));
+                var remoteFile = Path.Combine(destinationPath, Path.GetFileName(localFile));
                 try
                 {
-                    if (File.Exists(remoteFile)) File.Delete(remoteFile);
-                    File.Copy(sourceFile, remoteFile);
+                    if (File.Exists(remoteFile))
+                    {
+                        //SynchronizeTransactionFiles(localFile, remoteFile);
+                        //File.Delete(remoteFile);
+                    }
+                    else
+                    {
+                        File.Copy(localFile, remoteFile);
+                    }
                 }
                 catch (Exception e)
                 {
-                    return string.Format("Could not synchronize file {0} to {1}: {2}", sourceFile, remoteFile, e.Message);
+                    return string.Format("Could not synchronize file {0} to {1}: {2}", localFile, remoteFile, e.Message);
                 }
             }
+            //read in netorkqueue
+            //var localList = TransactionList.LoadFromFile(localInfo);
+            
             return string.Empty;
+        }
+
+        private static void SynchronizeTransactionFiles(string localFile, string remoteFile)
+        {
+            var localInfo = new FileInfo(localFile);
+            var remoteInfo = new FileInfo(remoteFile);
+
+            // skip if lastwrite time and size is the same
+            if (localInfo.LastWriteTimeUtc == remoteInfo.LastWriteTimeUtc && localInfo.Length == remoteInfo.Length) return;
+
+            var localList = TransactionList.LoadFromFile(localInfo);
+            var remoteList = TransactionList.LoadFromFile(remoteInfo);
+            bool changed = SynchronizeTransactionList(localList, remoteList);
+            if (changed)
+            {
+                localList.Save(localInfo);
+                remoteList.Save(remoteInfo);
+            }
+        }
+
+        private static bool SynchronizeTransactionList(TransactionList localList, TransactionList remoteList)
+        {
+            var remoteMissing = new List<Transaction>();
+            var localMissing = new List<Transaction>();
+
+            remoteList.AddRange(remoteMissing);
+            localList.AddRange(localMissing);
+
+            return remoteMissing.Count > 0 || localMissing.Count > 0;
         }
     }
 }

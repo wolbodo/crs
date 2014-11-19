@@ -44,7 +44,6 @@ namespace CashlessRegisterSystemCore.Model
         {
             var result = new List<string>();
             result.AddRange(File.ReadAllLines(Path.Combine(path, Settings.MembersFile), Encoding.UTF8));
-            result.RemoveRange(0, 4);
             return result;
         }
 
