@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.ComponentModel;
 using System.Drawing;
 using System.Linq;
+using System.IO;
 using System.Windows.Forms;
 using System.Threading;
 using System.Runtime.InteropServices;
@@ -35,7 +36,6 @@ namespace ViltjesSysteem
         private TransactionList transactionList;
         private MemberList memberList;
         private TransferList transferList;
-        private bool _writingTransaction = false;
         private DateTime lastSuccesfullSync = DateTime.MinValue;
 
         public GUI()
@@ -79,23 +79,19 @@ namespace ViltjesSysteem
 
         private void OnSynchronizeTransactions(object state)
         {
-            // make sure all remote files are copies of the 
-            if (!_writingTransaction)
+            var errorMessage = SynchronizeFiles.Execute(Settings.LocalTransactionsPath, Settings.RemoteTransactionsPath);
+            if (string.IsNullOrEmpty(errorMessage))
             {
-                var errorMessage = SynchronizeFiles.Execute(Settings.LocalTransactionsPath, Settings.RemoteTransactionsPath);
-                if (string.IsNullOrEmpty(errorMessage))
-                {
-                    lastSuccesfullSync = DateTime.Now;
-                }
-                Invoke((MethodInvoker)delegate
-                {
-                    int minutesAgo = (DateTime.Now - lastSuccesfullSync).Minutes;
-                    lastSyncInfo.Text = string.Format("Last synchronization {0} minutes ago ({1:yyyy-MM-dd})", minutesAgo, DateTime.Now);
-                    lastSyncInfo.BackColor = minutesAgo < 10 ? Color.Transparent : Color.Red;
-                });
-                GenerateMonthTransactionsExcel.Execute();
+                lastSuccesfullSync = DateTime.Now;
             }
-
+            Invoke((MethodInvoker)delegate
+            {
+                int minutesAgo = (DateTime.Now - lastSuccesfullSync).Minutes;
+                lastSyncInfo.Text = string.Format("Last synchronization {0} minutes ago ({1:yyyy-MM-dd}), Q: {2}",
+                    minutesAgo, DateTime.Now, File.ReadAllLines(TransactionList.SERVER_QUEUE_PATH).Count());
+                lastSyncInfo.BackColor = minutesAgo < 10 ? Color.Transparent : Color.Red;
+            });
+            GenerateMonthTransactionsExcel.Execute();
         }
 
         private static Color GetColor(Label lbl)
@@ -332,9 +328,7 @@ namespace ViltjesSysteem
                     int amount = number;
                     if (paying_member.Text != "" && amount != 0)
                     {
-                        _writingTransaction = true;
                         Transaction ok = transactionList.New(amount, paying_member.Text, memberList);
-                        _writingTransaction = false;
                         if (ok != null) {
                             try
                             {
