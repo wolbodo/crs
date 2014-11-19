@@ -71,7 +71,7 @@ namespace CashlessRegisterSystemCore.Tasks
                             {
                                 File.AppendAllText(TransactionList.ATOMIC_NEW_SERVER_QUEUE_PATH, transaction.ToFileLine() + Environment.NewLine, Encoding.UTF8);
                             }
-                            File.Move(TransactionList.ATOMIC_NEW_SERVER_QUEUE_PATH, TransactionList.SERVER_QUEUE_PATH);
+                            File.Copy(TransactionList.ATOMIC_NEW_SERVER_QUEUE_PATH, TransactionList.SERVER_QUEUE_PATH, true);
                         }
                     }
                     else

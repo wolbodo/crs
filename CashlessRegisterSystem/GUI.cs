@@ -79,6 +79,7 @@ namespace ViltjesSysteem
 
         private void OnSynchronizeTransactions(object state)
         {
+            if (!File.Exists(TransactionList.SERVER_QUEUE_PATH)) File.Create(TransactionList.SERVER_QUEUE_PATH);
             var errorMessage = SynchronizeFiles.Execute(Settings.LocalTransactionsPath, Settings.RemoteTransactionsPath);
             if (string.IsNullOrEmpty(errorMessage))
             {
