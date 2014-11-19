@@ -91,7 +91,8 @@ namespace ViltjesSysteem
                     minutesAgo, DateTime.Now, File.ReadAllLines(TransactionList.SERVER_QUEUE_PATH).Count());
                 lastSyncInfo.BackColor = minutesAgo < 10 ? Color.Transparent : Color.Red;
             });
-            GenerateMonthTransactionsExcel.Execute();
+			//GenerateMonthTransactionsExcel.Execute();
+            //GenerateYearTransactionsExcel.Execute(DateTime.Now.Year);
         }
 
         private static Color GetColor(Label lbl)

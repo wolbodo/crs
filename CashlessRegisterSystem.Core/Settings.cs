@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Configuration;
+using System.Globalization;
 using System.Linq;
 using System.Text;
 
@@ -8,6 +9,8 @@ namespace CashlessRegisterSystemCore
 {
     public static class Settings
     {
+        public static DateTimeFormatInfo DateTimeInfo = DateTimeFormatInfo.GetInstance(CultureInfo.GetCultureInfo("nl-NL"));
+
         public static string MembersFile
         {
             get { return GetSetting("MembersFile", "members.txt"); }

@@ -78,8 +78,9 @@ namespace CashlessRegisterSystemCore.Model
             {
                 var lines = File.ReadAllLines(fileInfo.FullName, Encoding.UTF8);
                 list.Init(lines.ToList());
+                list.Month = TransactionFileHelper.GetMonth(fileInfo.Name);
+                list.Year = TransactionFileHelper.GetYear(fileInfo.Name);
             }
-            list.Init(ReadTransactionsLastTwoMonths());
             return list;
         }
 

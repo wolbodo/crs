@@ -49,6 +49,7 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="Helpers\TransactionFileHelper.cs" />
+    <Compile Include="Model\YearBalance.cs" />
     <Compile Include="Settings.cs" />
     <Compile Include="Helpers\DateTimeExtensions.cs" />
     <Compile Include="Helpers\ExcelHelper.cs" />
@@ -64,6 +65,7 @@
     <Compile Include="Model\Transfer.cs" />
     <Compile Include="Model\TransferList.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
+    <Compile Include="Tasks\GenerateYearTransactionsExcel.cs" />
     <Compile Include="Tasks\GenerateMonthTransactionsExcel.cs" />
     <Compile Include="Tasks\EmailTransactionOverview.cs" />
     <Compile Include="Tasks\ProcessIncassoTransfers.cs" />
