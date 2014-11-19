@@ -4,6 +4,7 @@ using System.IO;
 using CashlessRegisterSystemCore.Helpers;
 using CashlessRegisterSystemCore.Model;
 using NUnit.Framework;
+using System.Text;
 
 namespace CashlessRegisterSystemCore.Tasks
 {
@@ -36,12 +37,7 @@ namespace CashlessRegisterSystemCore.Tasks
                 var remoteFile = Path.Combine(destinationPath, Path.GetFileName(localFile));
                 try
                 {
-                    if (File.Exists(remoteFile))
-                    {
-                        //SynchronizeTransactionFiles(localFile, remoteFile);
-                        //File.Delete(remoteFile);
-                    }
-                    else
+                    if (!File.Exists(remoteFile))
                     {
                         File.Copy(localFile, remoteFile);
                     }
@@ -51,10 +47,44 @@ namespace CashlessRegisterSystemCore.Tasks
                     return string.Format("Could not synchronize file {0} to {1}: {2}", localFile, remoteFile, e.Message);
                 }
             }
-            //read in netorkqueue
-            //var localList = TransactionList.LoadFromFile(localInfo);
-            
-            return string.Empty;
+
+            for (; ; )
+            {
+                try
+                {
+                    TransactionList queue;
+                    lock (TransactionList.SERVER_QUEUE_PATH)
+                    {
+                        queue = TransactionList.LoadFromFile(new FileInfo(TransactionList.SERVER_QUEUE_PATH));
+                    }
+                    if (queue.All.Count > 0)
+                    {
+                        Transaction transaction = queue.All[0];
+                        string transactionFile = Path.Combine(destinationPath, transaction.TransactionDate.ToString(TransactionList.TRANSACTION_LIST_PATH));
+                        File.AppendAllText(transactionFile, transaction.ToFileLine() + Environment.NewLine, Encoding.UTF8);
+                        lock (TransactionList.SERVER_QUEUE_PATH)
+                        {
+                            queue = TransactionList.LoadFromFile(new FileInfo(TransactionList.SERVER_QUEUE_PATH));
+                            queue.All.RemoveAt(0);
+                            File.WriteAllText(TransactionList.ATOMIC_NEW_SERVER_QUEUE_PATH, "");
+                            foreach (Transaction t in queue.All)
+                            {
+                                File.AppendAllText(TransactionList.ATOMIC_NEW_SERVER_QUEUE_PATH, transaction.ToFileLine() + Environment.NewLine, Encoding.UTF8);
+                            }
+                            File.Move(TransactionList.ATOMIC_NEW_SERVER_QUEUE_PATH, TransactionList.SERVER_QUEUE_PATH);
+                        }
+                    }
+                    else
+                    {
+                        //done
+                        return string.Empty;
+                    }
+                }
+                catch (Exception e)
+                {
+                    return string.Format("Could not process queue to server: {0}", e.Message);
+                }
+            }
         }
 
         private static void SynchronizeTransactionFiles(string localFile, string remoteFile)
