@@ -1,10 +1,8 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.IO;
-using CashlessRegisterSystemCore.Helpers;
-using CashlessRegisterSystemCore.Model;
-using NUnit.Framework;
 using System.Text;
+using CashlessRegisterSystemCore.Model;
 
 namespace CashlessRegisterSystemCore.Tasks
 {
@@ -15,7 +13,7 @@ namespace CashlessRegisterSystemCore.Tasks
             if (string.IsNullOrEmpty(sourcePath)) sourcePath = Environment.CurrentDirectory;
             if (!Directory.Exists(sourcePath)) return "Source path does not exist, fix the config";
             if (string.IsNullOrEmpty(destinationPath)) return "Destination path cannot be empty, fix the config";
-            if (!string.IsNullOrEmpty(sourcePath) && sourcePath == destinationPath) return "Source path cannot be the same as destination path, fix the config"; 
+            if (!string.IsNullOrEmpty(sourcePath) && sourcePath == destinationPath) return "Source path cannot be the same as destination path, fix the config";
             if (!Directory.Exists(destinationPath))
             {
                 try
@@ -34,6 +32,7 @@ namespace CashlessRegisterSystemCore.Tasks
             files.Add(Path.Combine(sourcePath, Settings.MembersFile));
             foreach (var localFile in files)
             {
+                if (localFile == null) continue;
                 var remoteFile = Path.Combine(destinationPath, Path.GetFileName(localFile));
                 try
                 {
@@ -48,72 +47,66 @@ namespace CashlessRegisterSystemCore.Tasks
                 }
             }
 
-            for (; ; )
+            for (;;)
             {
-                try
+                TransactionList queue;
+                //Lock queue to get all transactions from the queue
+                lock (TransactionList.SERVER_QUEUE_PATH)
                 {
-                    TransactionList queue;
-                    lock (TransactionList.SERVER_QUEUE_PATH)
-                    {
-                        queue = TransactionList.LoadFromFile(new FileInfo(TransactionList.SERVER_QUEUE_PATH));
-                    }
-                    if (queue.All.Count > 0)
-                    {
-                        Transaction transaction = queue.All[0];
-                        string transactionFile = Path.Combine(destinationPath, transaction.TransactionDate.ToString(TransactionList.TRANSACTION_LIST_PATH));
-                        File.AppendAllText(transactionFile, transaction.ToFileLine() + Environment.NewLine, Encoding.UTF8);
-                        lock (TransactionList.SERVER_QUEUE_PATH)
-                        {
-                            queue = TransactionList.LoadFromFile(new FileInfo(TransactionList.SERVER_QUEUE_PATH));
-                            queue.All.RemoveAt(0);
-                            File.WriteAllText(TransactionList.ATOMIC_NEW_SERVER_QUEUE_PATH, "");
-                            foreach (Transaction t in queue.All)
-                            {
-                                File.AppendAllText(TransactionList.ATOMIC_NEW_SERVER_QUEUE_PATH, transaction.ToFileLine() + Environment.NewLine, Encoding.UTF8);
-                            }
-                            File.Copy(TransactionList.ATOMIC_NEW_SERVER_QUEUE_PATH, TransactionList.SERVER_QUEUE_PATH, true);
-                        }
-                    }
-                    else
-                    {
-                        //done
-                        return string.Empty;
-                    }
+                    queue = TransactionList.LoadFromFile(new FileInfo(TransactionList.SERVER_QUEUE_PATH), initMonthYear:false); //Time A
                 }
-                catch (Exception e)
+                if (queue.All.Count > 0) //We have transactions to wrote to the remote server
                 {
-                    return string.Format("Could not process queue to server: {0}", e.Message);
+                    var transaction = queue.All[0]; //only get one transaction
+                    string transactionFile = Path.Combine(destinationPath, transaction.TransactionDate.ToString(TransactionList.TRANSACTION_LIST_PATH)); //determine remote path based on transaction date
+                    try
+                    {
+                        // this is a slow or failing network write
+                        File.AppendAllText(transactionFile, transaction.ToFileLine() + Environment.NewLine, Encoding.UTF8); //append the (one) transaction to the remote file (or create file)
+                    }
+                    catch (Exception e)
+                    {
+                        return string.Format("Could not process queue to server: {0}", e.Message);
+                    }
+                    RemoveFirstFromQueue();
+                }
+                else
+                {
+                    //done
+                    return string.Empty;
                 }
             }
         }
 
-        private static void SynchronizeTransactionFiles(string localFile, string remoteFile)
+        public static void RemoveFirstFromQueue()
         {
-            var localInfo = new FileInfo(localFile);
-            var remoteInfo = new FileInfo(remoteFile);
-
-            // skip if lastwrite time and size is the same
-            if (localInfo.LastWriteTimeUtc == remoteInfo.LastWriteTimeUtc && localInfo.Length == remoteInfo.Length) return;
-
-            var localList = TransactionList.LoadFromFile(localInfo);
-            var remoteList = TransactionList.LoadFromFile(remoteInfo);
-            bool changed = SynchronizeTransactionList(localList, remoteList);
-            if (changed)
+            lock (TransactionList.SERVER_QUEUE_PATH) //Time B //lock the remote queue so we don't get bitten by a transaction write in another thread because another transaction could be appended between A & B
             {
-                localList.Save(localInfo);
-                remoteList.Save(remoteInfo);
+                TransactionList queue = TransactionList.LoadFromFile(new FileInfo(TransactionList.SERVER_QUEUE_PATH), initMonthYear:false); //reload all transactions
+                queue.All.RemoveAt(0); //remove the transaction we have written
+                File.WriteAllText(TransactionList.ATOMIC_NEW_SERVER_QUEUE_PATH, "");
+                foreach (var t in queue.All) //loop over all queued transactions
+                {
+                    File.AppendAllText(TransactionList.ATOMIC_NEW_SERVER_QUEUE_PATH, t.ToFileLine() + Environment.NewLine, Encoding.UTF8); //append to local file
+                }
+                File.Delete(TransactionList.SERVER_QUEUE_PATH); //Delete the old queue
+                File.Move(TransactionList.ATOMIC_NEW_SERVER_QUEUE_PATH, TransactionList.SERVER_QUEUE_PATH); //Moment C //move the new temp file into place
             }
         }
-
-        private static bool SynchronizeTransactionList(TransactionList localList, TransactionList remoteList)
+        
+        public static void CrashRecovery()
         {
-            var remoteMissing = new List<Transaction>();
-            var localMissing = new List<Transaction>();
-
-            remoteList.AddRange(remoteMissing);
-            localList.AddRange(localMissing);
-
-            return remoteMissing.Count > 0 || localMissing.Count > 0;
+            if (File.Exists(TransactionList.ATOMIC_NEW_SERVER_QUEUE_PATH)) //we crashed between moment B and C
+            {
+                if (!File.Exists(TransactionList.SERVER_QUEUE_PATH))
+                {
+                    File.Move(TransactionList.ATOMIC_NEW_SERVER_QUEUE_PATH, TransactionList.SERVER_QUEUE_PATH); //Moment C //move the new temp file into place
+                }
+                else
+                {
+                    RemoveFirstFromQueue();
+                }
+            }
         }
     }
 }

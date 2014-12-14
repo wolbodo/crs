@@ -1,12 +1,9 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Drawing;
-using System.Globalization;
 using System.IO;
 using System.Linq;
 using CashlessRegisterSystemCore.Helpers;
 using CashlessRegisterSystemCore.Model;
-using NUnit.Framework;
 using OfficeOpenXml;
 using OfficeOpenXml.Style;
 

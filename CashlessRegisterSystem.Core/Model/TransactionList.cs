@@ -71,15 +71,18 @@ namespace CashlessRegisterSystemCore.Model
             return list;
         }
 
-        public static TransactionList LoadFromFile(FileInfo fileInfo)
+        public static TransactionList LoadFromFile(FileInfo fileInfo, bool initMonthYear = true)
         {
             var list = new TransactionList();
             if (File.Exists(fileInfo.FullName))
             {
                 var lines = File.ReadAllLines(fileInfo.FullName, Encoding.UTF8);
                 list.Init(lines.ToList());
-                list.Month = TransactionFileHelper.GetMonth(fileInfo.Name);
-                list.Year = TransactionFileHelper.GetYear(fileInfo.Name);
+                if (initMonthYear)
+                {
+                    list.Month = TransactionFileHelper.GetMonth(fileInfo.Name);
+                    list.Year = TransactionFileHelper.GetYear(fileInfo.Name);
+                }
             }
             return list;
         }

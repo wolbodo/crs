@@ -587,12 +587,12 @@
             // lastSyncInfo
             // 
             this.lastSyncInfo.BackColor = System.Drawing.Color.Transparent;
-            this.lastSyncInfo.Font = new System.Drawing.Font("Segoe UI", 12F);
+            this.lastSyncInfo.Font = new System.Drawing.Font("Segoe UI", 10F);
             this.lastSyncInfo.ForeColor = System.Drawing.Color.White;
-            this.lastSyncInfo.Location = new System.Drawing.Point(662, 738);
+            this.lastSyncInfo.Location = new System.Drawing.Point(662, 744);
             this.lastSyncInfo.Margin = new System.Windows.Forms.Padding(0);
             this.lastSyncInfo.Name = "lastSyncInfo";
-            this.lastSyncInfo.Size = new System.Drawing.Size(362, 30);
+            this.lastSyncInfo.Size = new System.Drawing.Size(362, 24);
             this.lastSyncInfo.TabIndex = 30;
             this.lastSyncInfo.Tag = "Blue";
             this.lastSyncInfo.Text = "Waiting for first synchronization.";

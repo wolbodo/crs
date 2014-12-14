@@ -1,9 +1,6 @@
 ﻿using System;
-using System.Collections.Generic;
 using System.Configuration;
 using System.Globalization;
-using System.Linq;
-using System.Text;
 
 namespace CashlessRegisterSystemCore
 {
@@ -70,7 +67,7 @@ namespace CashlessRegisterSystemCore
             var setting = GetValue(keyName);
             if (setting == null) return @default;
             int res;
-            bool ok = Int32.TryParse(setting, out res);
+            bool ok = int.TryParse(setting, out res);
             if (ok) return res;
             return @default;
         }

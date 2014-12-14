@@ -30,7 +30,7 @@ namespace ViltjesSysteem
         private static TimeSpan idleThreshold = TimeSpan.FromMinutes(3);
 
         public delegate void MessageEventHandler(MessageEventArgs message);
-        public static EventHandler dataChange;
+        public static EventHandler DataChange;
         public static MessageEventHandler messageNotice;
 
         private TransactionList transactionList;
@@ -42,6 +42,7 @@ namespace ViltjesSysteem
         {
             InitializeComponent();
 
+            SynchronizeFiles.CrashRecovery();
             memberList = new MemberList(false, Environment.CurrentDirectory, watch:true);
             transactionList = TransactionList.LoadFromFile();
             transferList = TransferList.LoadAndWatchFromFile();
@@ -52,7 +53,7 @@ namespace ViltjesSysteem
             transactionList.dataChange += UpdateGUI;
             transactionList.messageNotice += MessageNotice;
 
-            dataChange += UpdateGUI;
+            DataChange += UpdateGUI;
             messageNotice += MessageNotice;
            // int initOrder = Member.All.Count + Transaction.All.Count + Transfer.All.Count;
             checkTimer.Elapsed += TimedCheck;
@@ -85,15 +86,29 @@ namespace ViltjesSysteem
             {
                 lastSuccesfullSync = DateTime.Now;
             }
+            UpdateSyncStatus();
+            //GenerateMonthTransactionsExcel.Execute();
+            //GenerateYearTransactionsExcel.Execute(DateTime.Now.Year);
+        }
+
+        private void UpdateSyncStatus()
+        {
             Invoke((MethodInvoker)delegate
             {
                 int minutesAgo = (DateTime.Now - lastSuccesfullSync).Minutes;
-                lastSyncInfo.Text = string.Format("Last synchronization {0} minutes ago ({1:yyyy-MM-dd}), Q: {2}",
-                    minutesAgo, DateTime.Now, File.ReadAllLines(TransactionList.SERVER_QUEUE_PATH).Count());
-                lastSyncInfo.BackColor = minutesAgo < 10 ? Color.Transparent : Color.Red;
+                try
+                {
+
+                    lastSyncInfo.Text = string.Format("Last synchronization {0} minutes ago ({1:yyyy-MM-dd}), # {2}",
+                        minutesAgo, DateTime.Now, File.ReadAllLines(TransactionList.SERVER_QUEUE_PATH).Count());
+                    lastSyncInfo.BackColor = minutesAgo < 10 ? Color.Transparent : Color.Red;
+                }
+                catch (Exception e)
+                {
+                    lastSyncInfo.Text = string.Format("Last synchronization {0} minutes ago ({1:yyyy-MM-dd}), #ERR", minutesAgo, DateTime.Now);
+                    lastSyncInfo.BackColor = Color.DarkRed;
+                }
             });
-			//GenerateMonthTransactionsExcel.Execute();
-            //GenerateYearTransactionsExcel.Execute(DateTime.Now.Year);
         }
 
         private static Color GetColor(Label lbl)
@@ -338,6 +353,7 @@ namespace ViltjesSysteem
                             }
                             catch { }
                         }
+                        UpdateSyncStatus();
                         KeypadClear_Click(sender, e);
                         NameClear_Click(sender, e);
                         LastNames();
