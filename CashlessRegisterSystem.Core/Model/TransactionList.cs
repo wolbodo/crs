@@ -5,6 +5,7 @@ using System.Globalization;
 using System.IO;
 using System.Linq;
 using System.Text;
+using System.Windows.Forms;
 using CashlessRegisterSystemCore.Helpers;
 
 namespace CashlessRegisterSystemCore.Model
@@ -166,19 +167,23 @@ namespace CashlessRegisterSystemCore.Model
 
             string transactionFile = transactionTime.ToString(TRANSACTION_LIST_PATH);
             var transaction = new Transaction { TransactionDate = transactionTime, AmountInCents = amount, MemberName = memberName, Note = note };
-
+            
             //try network save, but degrade without errors (but there should be a warning on the display!)
             //FIXME: part about the warning
             string errorMessage = string.Empty;
             try
             {
                 File.AppendAllText(transactionFile, transaction.ToFileLine() + Environment.NewLine, Encoding.UTF8);
+                //MessageBox.Show("uno", "eins", MessageBoxButtons.YesNoCancel);
                 lock (SERVER_QUEUE_PATH)
                 {
                     File.AppendAllText(SERVER_QUEUE_PATH, transaction.ToFileLine() + Environment.NewLine, Encoding.UTF8);
                 }
+                //MessageBox.Show("dos", "zwei", MessageBoxButtons.YesNoCancel);
                 memberList.TryAddTransaction(transaction);
+                //MessageBox.Show("tres", "drei", MessageBoxButtons.YesNoCancel);
                 All.Add(transaction);
+                //MessageBox.Show("quattro", "vier", MessageBoxButtons.YesNoCancel);
                 if (transaction.AmountInCents < 0)
                 {
                     TryParseCorrected(transaction);

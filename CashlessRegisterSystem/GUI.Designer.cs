@@ -358,7 +358,7 @@
             this.names2.Size = new System.Drawing.Size(80, 80);
             this.names2.TabIndex = 21;
             this.names2.Tag = "Blue";
-            this.names2.Text = "G-M";
+            this.names2.Text = "H-M";
             this.names2.TextAlign = System.Drawing.ContentAlignment.MiddleCenter;
             this.names2.Click += new System.EventHandler(this.Names_Click);
             this.names2.MouseDown += new System.Windows.Forms.MouseEventHandler(this.Feedback_MouseDown);
@@ -374,7 +374,7 @@
             this.names1.Size = new System.Drawing.Size(80, 80);
             this.names1.TabIndex = 20;
             this.names1.Tag = "Blue";
-            this.names1.Text = "A-F";
+            this.names1.Text = "A-G";
             this.names1.TextAlign = System.Drawing.ContentAlignment.MiddleCenter;
             this.names1.Click += new System.EventHandler(this.Names_Click);
             this.names1.MouseDown += new System.Windows.Forms.MouseEventHandler(this.Feedback_MouseDown);
